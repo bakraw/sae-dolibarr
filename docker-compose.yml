@@ -10,6 +10,7 @@ services:
     volumes:
       - ./import-data.sql:/docker-entrypoint-initdb.d/import-data.sql
       - ./data.csv:/docker-entrypoint-initdb.d/data.csv
+      - ./attendre-dolibarr.sh:/docker-entrypoint-initdb.d/attendre-dolibarr.sh
     ports:
       - "3306:3306"
     networks:
