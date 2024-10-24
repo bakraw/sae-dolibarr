@@ -1,0 +1,41 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: dolibarr-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=dolibarr
+      - MYSQL_USER=dolibarr_user
+      - MYSQL_PASSWORD=dolibarr_password
+    volumes:
+      - ./import-data.sql:/docker-entrypoint-initdb.d/import-data.sql
+      - ./data.csv:/docker-entrypoint-initdb.d/data.csv
+    ports:
+      - "3306:3306"
+    networks:
+      - dolibarr-network
+
+  dolibarr:
+    image: dolibarr/dolibarr:latest
+    container_name: dolibarr-app
+    ports:
+      - "8080:80"
+    environment:
+      - DOLI_DB_HOST=mariadb
+      - DOLI_DB_USER=dolibarr_user
+      - DOLI_DB_PASSWORD=dolibarr_password
+      - DOLI_DB_NAME=dolibarr
+    depends_on:
+      - mariadb
+    volumes:
+      - dolibarr_data:/var/www/html/documents
+    networks:
+      - dolibarr-network
+
+volumes:
+  db_data:
+  dolibarr_data:
+
+networks:
+  dolibarr-network:
+    driver: bridge
