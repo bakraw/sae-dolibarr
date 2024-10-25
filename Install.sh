@@ -6,11 +6,12 @@ if [ ! -f "docker-compose.yml" ]; then
 
   # Créer le fichier docker-compose.yml pour Dolibarr et MariaDB
   cat <<EOL > docker-compose.yml
+
 version: '3'
 
 services:
   mariadb:
-    image: mariadb:10.5
+    image: mariadb:latest
     container_name: dolibarr-db
     environment:
       - MYSQL_ROOT_PASSWORD=rootpassword
@@ -18,7 +19,11 @@ services:
       - MYSQL_USER=dolibarr_user
       - MYSQL_PASSWORD=dolibarr_password
     volumes:
-      - db_data:/var/lib/mysql
+      - ./import-data.sql:/docker-entrypoint-initdb.d/import-data.sql
+      - ./data.csv:/docker-entrypoint-initdb.d/data.csv
+      - ./attendre-dolibarr.sh:/docker-entrypoint-initdb.d/attendre-dolibarr.sh
+    ports:
+      - "3306:3306"
     networks:
       - dolibarr-network
 
@@ -46,6 +51,7 @@ volumes:
 networks:
   dolibarr-network:
     driver: bridge
+
 EOL
   echo "Fichier docker-compose.yml créé avec succès."
 else
