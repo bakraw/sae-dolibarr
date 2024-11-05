@@ -1,9 +1,9 @@
+-- Utilisation de la base de données dolibarr
 USE dolibarr;
 
-LOAD DATA INFILE '/docker-entrypoint-initdb.d/data.csv'
+LOAD DATA LOCAL INFILE '/docker-entrypoint-initdb.d/data.csv'
 INTO TABLE llx_societe
 FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES
-(type, nom, adresse, zip, town, pays, phone, email);
+(nom, code_client, address, zip, town, fk_pays, phone, email, client, fournisseur);
