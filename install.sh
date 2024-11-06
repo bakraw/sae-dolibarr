@@ -60,7 +60,7 @@ fi
 
 # Lancer Docker Compose
 echo "Lancement de Dolibarr et MariaDB avec Docker Compose..."
-docker-compose up -d
+docker-compose up -d --build
 
 # Attendre la création des tables par Dolibarr
 echo "En attente de la création des conteneurs..."
@@ -69,5 +69,17 @@ sleep 20
 # Exécuter le script SQL d'import
 echo "Import des données..."
 docker exec dolibarr-db sh -c "su && service mariadb stasrt && mariadb -u'dolibarr_user' -p'dolibarr_password' < /import-data.sql"
+
+# Attendre la création des conteneurs et l'initialisation de la base de données
+echo "En attente de l'initialisation des conteneurs..."
+sleep 5
+
+# Activer uniquement les modules "Clients" et "Fournisseurs"
+echo "Activation des modules Clients et Fournisseurs..."
+docker exec dolibarr-db sh -c "mariadb -u'dolibarr_user' -p'dolibarr_password' dolibarr -e \"
+  INSERT INTO llx_const (name, value, type, visible, entity) VALUES
+  ('MAIN_MODULE_SOCIETE', '1', 'chaine', 1, 1)
+  ON DUPLICATE KEY UPDATE value='1';
+\""
 
 echo "Installation terminée. Dolibarr est disponible sur http://localhost:8080"
