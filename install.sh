@@ -70,4 +70,16 @@ sleep 20
 echo "Import des données..."
 docker exec dolibarr-db sh -c "su && service mariadb stasrt && mariadb -u'dolibarr_user' -p'dolibarr_password' < /import-data.sql"
 
+# Attendre la création des conteneurs et l'initialisation de la base de données
+echo "En attente de l'initialisation des conteneurs..."
+sleep 30
+
+# Activer uniquement les modules "Clients" et "Fournisseurs"
+echo "Activation des modules Clients et Fournisseurs..."
+docker exec dolibarr-db sh -c "mysql -u'dolibarr_user' -p'dolibarr_password' dolibarr -e \"
+  INSERT INTO llx_const (name, value, type, visible, entity) VALUES
+  ('MAIN_MODULE_SOCIETE', '1', 'chaine', 1, 1)
+  ON DUPLICATE KEY UPDATE value='1';
+\""
+
 echo "Installation terminée. Dolibarr est disponible sur http://localhost:8080"
