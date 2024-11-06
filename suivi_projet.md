@@ -45,4 +45,5 @@
 | Date       | Objectifs accomplis                                            | Difficultés rencontrées                                     |
 |------------|----------------------------------------------------------------|-------------------------------------------------------------|
 | 2024-11-04 | - Modification du script d'installation pour qu'il importe les données après le lancement des deux conteneurs<br>- Création du sommaire de la documentation    | - Un erreur dans la syntaxe de docker exec empêchait le bon fonctionnement de l'import |
-| 2024-11-05 | - Activation automatique des modules<br>- Début script de back-up       | - Fonctions plus avancées de Dolibarr qui requièrent des recherches supplémentaires   |
+| 2024-11-05 | - Recherches activation automatique des modules<br>- Début script de back-up       | - Fonctions plus avancées de Dolibarr qui requièrent des recherches supplémentaires   |
+| 2024-11-06 | - Tentative acitvation automatique des modules<br>- Clarification objectifs       | - L'activation des modules en mettant à jour la table SQL manuellement est trop compliqué.
