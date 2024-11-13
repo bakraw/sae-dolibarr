@@ -51,13 +51,46 @@ Dans se projet, nous avions découvert plusieurs notions comme ERP et CRM mais a
 
 ### 2-1 ERP & CRM
 
+#### ERP (Enterprise Resource Planning)
+
+Un ERP, ou progiciel de gestion intégré en français, est un logiciel destiné à centraliser et gérer tous les processus et informations d’une entreprise dans une seule base de données. Cela permet une gestion unifiée de plusieurs fonctions essentielles, comme :
+
+- Les finances : comptabilité, facturation, suivi des dépenses et revenus.
+- La gestion des stocks et de la production : suivi des stocks, planification de la production, gestion des achats et des ventes.
+- Les ressources humaines : gestion de la paie, des congés, des absences et des données des employés.
+- L'objectif principal d'un ERP est d'améliorer la collaboration et l'efficacité au sein de l'entreprise en éliminant les silos d'informations, en permettant à tous les départements de travailler avec les mêmes données actualisées.
+
+#### CRM (Customer Relationship Management)
+
+Un CRM, ou gestion de la relation client, est un système centré sur la gestion des interactions avec les clients et les prospects. Il aide les entreprises à suivre et à gérer chaque point de contact client, depuis les premiers échanges commerciaux jusqu’au support après-vente. Les principales fonctions d'un CRM incluent :
+
+- La gestion des contacts : centralisation des informations de clients et prospects.
+- Le suivi des opportunités commerciales : gestion des devis, des commandes et des potentiels clients.
+- L'automatisation du marketing et des ventes : suivi des campagnes marketing et des pipelines de ventes.
+- Le CRM vise à améliorer la satisfaction client et à accroître les ventes en assurant une communication personnalisée et un suivi attentif des besoins et des attentes des clients.
 
 ### 2-2 Dolibarr 
 
+Dolibarr est un logiciel open-source de gestion d’entreprise, qui combine les fonctionnalités d’un ERP (Enterprise Resource Planning) et d’un CRM (Customer Relationship Management). Conçu principalement pour les petites et moyennes entreprises (PME), il propose une solution intégrée pour gérer différents aspects d’une organisation : clients, fournisseurs, facturation, stocks, et bien plus encore.
+Dolibarr présente des avantages importants : 
 
+#### Points forts
 
+- Gratuit et open source : Solution économique et personnalisable.
+- Modulaire : Activez seulement les fonctionnalités dont vous avez besoin.
+- Facile à utiliser : Interface simple, adaptée aux petites entreprises.
+- Installation rapide : Peut être installé en local ou sur serveur, compatible avec plusieurs systèmes.
+- Bonne communauté : Aide et documentation disponibles, plus des extensions pour enrichir le logiciel.
 
+#### Points faibles
 
+- Limité pour les grandes entreprises : Pas idéal pour des besoins complexes.
+- Performances : Peut ralentir avec beaucoup de données.
+- Fonctions de comptabilité et CRM basiques : Nécessite parfois des modules supplémentaires.
+- Support payant : Assistance directe limitée si vous n'avez pas d'expert interne.
+- Interface simple : Moins moderne que d'autres ERP.
+
+Ce logiciel est excellente pour les petites entreprises avec des besoins de gestion basiques, mais limité pour les grandes entreprises ou des besoins très spécifiques.
 
 ## 3 Scripts du projets 
 ### 3-1 Docker-compose
