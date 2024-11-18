@@ -118,41 +118,41 @@ services:
     networks:
       - dolibarr-network
 ```
-- Services : 
+- **Services** : 
 Cette section définit les conteneurs Docker nécessaires à votre application. Il y a deux services : mariadb et dolibarr.
 
-- Service mariadb :
+- **Service mariadb** :
 C'est un conteneur qui exécute une base de données MariaDB.
 
-- Image : mariadb:latest :
+- **Image : mariadb:latest** :
 Cela spécifie que le conteneur doit utiliser l'image officielle MariaDB dans sa dernière version.
 
-- Container Name : dolibarr-db :
+- **Container Name : dolibarr-db** :
 Nom attribué au conteneur pour le distinguer.
 
-- Environment :
+- **Environment** :
 Variables d'environnement pour configurer MariaDB.
 
-- MYSQL_ROOT_PASSWORD :
+- **MYSQL_ROOT_PASSWORD** :
 Mot de passe pour l'utilisateur root.
 
-- MYSQL_DATABASE : 
+- **MYSQL_DATABASE** : 
 Nom de la base de données qui sera automatiquement créée.
 
-- MYSQL_USER et MYSQL_PASSWORD :
+- **MYSQL_USER et MYSQL_PASSWORD** :
 Un utilisateur non-root et ses credentials pour se connecter à la base.
 
-- Volumes :
-./data.csv:/docker-entrypoint-initdb.d/data.csv
+- **Volumes** :
+**./data.csv:/docker-entrypoint-initdb.d/data.csv**
 Ce fichier est monté dans le conteneur. S'il contient des données, MariaDB peut l'utiliser pour initialiser la base.
 
-./import-data.sql:/import-data.sql
+**./import-data.sql:/import-data.sql**
 Un script SQL, probablement pour importer des données ou configurer la base.
 
-- Ports :
+- **Ports** :
 3306:3306 signifie que le port 3306 (utilisé par MariaDB) du conteneur est mappé au port 3306 de l'hôte.
 
-- Networks :
+- **Networks** :
 Le conteneur est connecté à un réseau Docker nommé dolibarr-network.
 
 
@@ -174,35 +174,35 @@ Le conteneur est connecté à un réseau Docker nommé dolibarr-network.
       networks:
         - dolibarr-network
 ```
-- Service dolibarr :
+- **Service dolibarr** :
 Ce conteneur exécute l'application Dolibarr, un ERP/CRM open source. 
 
-- Image : dolibarr/dolibarr:latest
+- **Image** : dolibarr/dolibarr:latest
 L'image officielle de Dolibarr dans sa dernière version.
 
-- Container Name : dolibarr-app
+- **Container Name** : dolibarr-app
 Nom attribué au conteneur.
 
-- Ports :
+- **Ports** :
 8080:80 signifie que le port 80 (par défaut pour HTTP) du conteneur est mappé au port 8080 de l'hôte.
 
-- Environment :
+- **Environment** :
 Variables d'environnement pour configurer Dolibarr.
 
-- DOLI_DB_HOST :
+- **DOLI_DB_HOST** :
 Nom d'hôte du service MariaDB (ici mariadb, qui correspond au nom du service).
 
-- DOLI_DB_USER, DOLI_DB_PASSWORD, DOLI_DB_NAME :
+- **DOLI_DB_USER, DOLI_DB_PASSWORD, DOLI_DB_NAME** :
 Identifiants de connexion à la base de données.
 
-- depends_on :
+- **depends_on** :
 Indique que ce conteneur dépend du service mariadb. Docker Compose s'assurera que mariadb est démarré avant dolibarr.
 
-- Volumes :
+- **Volumes** :
 dolibarr_data:/var/www/html/documents
 Les documents générés ou utilisés par Dolibarr seront stockés dans ce volume persistant.
 
-- Networks :
+- **Networks** :
 Le conteneur est connecté au réseau dolibarr-network.
 
 ```
@@ -210,13 +210,13 @@ volumes:
   db_data:
   dolibarr_data:
 ```
-- Volumes
+- **Volumes** :
 Les volumes Docker permettent de persister des données même si le conteneur est recréé.
 
-- db_data :
+- **db_data** :
 Utilisé pour persister les données de la base MariaDB.
 
-- dolibarr_data :
+- **dolibarr_data** :
 Stocke les fichiers de Dolibarr.
 
 ```
@@ -225,7 +225,7 @@ networks:
     driver: bridge
 ```
 
-- Networks
+- **Networks** :
 Le réseau dolibarr-network utilise le pilote bridge. Cela permet aux conteneurs d'interagir entre eux sur un réseau virtuel isolé.
 
         
