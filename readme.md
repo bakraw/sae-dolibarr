@@ -93,7 +93,142 @@ Dolibarr présente des avantages importants :
 Ce logiciel est excellente pour les petites entreprises avec des besoins de gestion basiques, mais limité pour les grandes entreprises ou des besoins très spécifiques.
 
 ## 3 Scripts du projets 
+
+Pour ce projet, nous avons fait divers codes et scripts qui font divers tâche. Comme le docker-compose qui créer les conteneurs, l'install qui permet d'installer les dockers à partir de rien. Le script d'import qui permet d'importer les fichiers sur le dolibarr et le script backup qui permet de faire des sauvegarde. 
+
 ### 3-1 Docker-compose
+
+Pour commencer, on va parler du docker-compose. 
+
+```
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: dolibarr-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=dolibarr
+      - MYSQL_USER=dolibarr_user
+      - MYSQL_PASSWORD=dolibarr_password
+    volumes:
+      - ./data.csv:/docker-entrypoint-initdb.d/data.csv
+      - ./import-data.sql:/import-data.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - dolibarr-network
+```
+- Services : 
+Cette section définit les conteneurs Docker nécessaires à votre application. Il y a deux services : mariadb et dolibarr.
+
+- Service mariadb :
+C'est un conteneur qui exécute une base de données MariaDB.
+
+- Image : mariadb:latest :
+Cela spécifie que le conteneur doit utiliser l'image officielle MariaDB dans sa dernière version.
+
+- Container Name : dolibarr-db :
+Nom attribué au conteneur pour le distinguer.
+
+- Environment :
+Variables d'environnement pour configurer MariaDB.
+
+- MYSQL_ROOT_PASSWORD :
+Mot de passe pour l'utilisateur root.
+
+- MYSQL_DATABASE : 
+Nom de la base de données qui sera automatiquement créée.
+
+- MYSQL_USER et MYSQL_PASSWORD :
+Un utilisateur non-root et ses credentials pour se connecter à la base.
+
+- Volumes :
+./data.csv:/docker-entrypoint-initdb.d/data.csv
+Ce fichier est monté dans le conteneur. S'il contient des données, MariaDB peut l'utiliser pour initialiser la base.
+
+./import-data.sql:/import-data.sql
+Un script SQL, probablement pour importer des données ou configurer la base.
+
+- Ports :
+3306:3306 signifie que le port 3306 (utilisé par MariaDB) du conteneur est mappé au port 3306 de l'hôte.
+
+- Networks :
+Le conteneur est connecté à un réseau Docker nommé dolibarr-network.
+
+
+```
+  dolibarr:
+      image: dolibarr/dolibarr:latest
+      container_name: dolibarr-app
+      ports:
+        - "8080:80"
+      environment:
+        - DOLI_DB_HOST=mariadb
+        - DOLI_DB_USER=dolibarr_user
+        - DOLI_DB_PASSWORD=dolibarr_password
+        - DOLI_DB_NAME=dolibarr
+      depends_on:
+        - mariadb
+      volumes:
+        - dolibarr_data:/var/www/html/documents
+      networks:
+        - dolibarr-network
+```
+- Service dolibarr :
+Ce conteneur exécute l'application Dolibarr, un ERP/CRM open source. 
+
+- Image : dolibarr/dolibarr:latest
+L'image officielle de Dolibarr dans sa dernière version.
+
+- Container Name : dolibarr-app
+Nom attribué au conteneur.
+
+- Ports :
+8080:80 signifie que le port 80 (par défaut pour HTTP) du conteneur est mappé au port 8080 de l'hôte.
+
+- Environment :
+Variables d'environnement pour configurer Dolibarr.
+
+- DOLI_DB_HOST :
+Nom d'hôte du service MariaDB (ici mariadb, qui correspond au nom du service).
+
+- DOLI_DB_USER, DOLI_DB_PASSWORD, DOLI_DB_NAME :
+Identifiants de connexion à la base de données.
+
+- depends_on :
+Indique que ce conteneur dépend du service mariadb. Docker Compose s'assurera que mariadb est démarré avant dolibarr.
+
+- Volumes :
+dolibarr_data:/var/www/html/documents
+Les documents générés ou utilisés par Dolibarr seront stockés dans ce volume persistant.
+
+- Networks :
+Le conteneur est connecté au réseau dolibarr-network.
+
+```
+volumes:
+  db_data:
+  dolibarr_data:
+```
+- Volumes
+Les volumes Docker permettent de persister des données même si le conteneur est recréé.
+
+- db_data :
+Utilisé pour persister les données de la base MariaDB.
+
+- dolibarr_data :
+Stocke les fichiers de Dolibarr.
+
+```
+networks:
+  dolibarr-network:
+    driver: bridge
+```
+
+- Networks
+Le réseau dolibarr-network utilise le pilote bridge. Cela permet aux conteneurs d'interagir entre eux sur un réseau virtuel isolé.
+
+        
 ### 3-2 Install
 ### 3-3 Import_csv
 ### 3-4 Backup
