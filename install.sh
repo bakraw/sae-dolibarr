@@ -21,7 +21,6 @@ services:
     volumes:
       - ./import-data.sql:/import-data.sql
       - ./data.csv:/docker-entrypoint-initdb.d/data.csv
-      - ./attendre-dolibarr.sh:/docker-entrypoint-initdb.d/attendre-dolibarr.sh
     ports:
       - "3306:3306"
     networks:
@@ -68,7 +67,29 @@ sleep 20
 
 # Exécuter le script SQL d'import
 echo "Import des données..."
-docker exec dolibarr-db sh -c "su && service mariadb stasrt && mariadb -u'dolibarr_user' -p'dolibarr_password' < /import-data.sql"
+docker exec dolibarr-db sh -c "su && service mariadb start && mariadb -u'dolibarr_user' -p'dolibarr_password' < /import-data.sql"
+
+# Attendre la création des conteneurs et l'initialisation de la base de données
+echo "En attente de l'initialisation des conteneurs..."
+sleep 20
+
+# Activer les modules "Tiers" et "Fournisseurs"
+echo "Activation des modules Tiers et Fournisseurs..."
+docker exec dolibarr-db sh -c "mariadb -u'dolibarr_user' -p'dolibarr_password' dolibarr -e \"
+  UPDATE llx_const SET value='1' WHERE name='MAIN_MODULE_SOCIETE' AND entity=1;
+  INSERT INTO llx_const (name, value, type, visible, entity) 
+  VALUES 
+  ('MAIN_MODULE_SOCIETE', '1', 'chaine', 1, 1) 
+  ON DUPLICATE KEY UPDATE value='1';
+\""
+docker exec dolibarr-db sh -c "mariadb -u'dolibarr_user' -p'dolibarr_password' dolibarr -e \"
+  UPDATE llx_const SET value='1' WHERE name='MAIN_MODULE_FOURNISSEUR' AND entity=1;
+  INSERT INTO llx_const (name, value, type, visible, entity) 
+  VALUES 
+  ('MAIN_MODULE_FOURNISSEUR', '1', 'chaine', 1, 1) 
+  ON DUPLICATE KEY UPDATE value='1';
+\""
+
 
 # Attendre la création des conteneurs et l'initialisation de la base de données
 echo "En attente de l'initialisation des conteneurs..."
