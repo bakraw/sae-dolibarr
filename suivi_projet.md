@@ -40,10 +40,38 @@
 
 ---
 
-## Semaine 45
+## Semaines 45 - 46
 
 | Date       | Objectifs accomplis                                            | Difficultés rencontrées                                     |
 |------------|----------------------------------------------------------------|-------------------------------------------------------------|
 | 2024-11-04 | - Modification du script d'installation pour qu'il importe les données après le lancement des deux conteneurs<br>- Création du sommaire de la documentation    | - Un erreur dans la syntaxe de docker exec empêchait le bon fonctionnement de l'import |
-| 2024-11-05 | - Recherches activation automatique des modules<br>- Début script de back-up       | - Fonctions plus avancées de Dolibarr qui requièrent des recherches supplémentaires   |
-| 2024-11-06 | - Tentative acitvation automatique des modules<br>- Clarification objectifs       | - L'activation des modules en mettant à jour la table SQL manuellement est trop compliqué.
+| 2024-11-05 | -Tentative script activation module<br>- Début script de back-up       | - Fonctions plus avancées de Dolibarr qui requièrent des recherches supplémentaires   |
+| 2024-11-07 | - Début documentation<br>- Activation de module via SQL      | - L'activation de module par SQL ne fonctionne pas complètement  |
+| 2024-11-13 | - Recherche méthode de sauvegarde de l'instance<br>- Script d'import indépendant      | - Pas de méthode de sauvegarde native à Dolibarr  |
+
+---
+
+## Notes générales
+
+- **Réflexion hebdomadaire** : 
+  - Import des données complètement automatisé et documentation bien entamée, avancée efficace
+- **Objectifs pour la semaine prochaine** : 
+  - Activation automatique de modules
+  - Sauvegarde de l'instance
+  - Compléter la documentation
+
+---
+
+## Semaine 47
+
+| Date       | Objectifs accomplis                                            | Difficultés rencontrées                                     |
+|------------|----------------------------------------------------------------|-------------------------------------------------------------|
+| 2024-11-18 | - Tentative activation modules via PHO<br>- Avancement documentation    | - Le script PHP ne se lance pas au lancement du conteneur |
+| 2024-11-21 | - Retour activation module via SQL<br>- Snapshot du docker-compose pour back-up    | - Réstauration snapshot pas finalisée |
+
+---
+
+## Notes générales
+
+- **Réflexion hebdomadaire** : 
+  - Tout n'est pas terminé mais la majorité du cahier des charge est faite
