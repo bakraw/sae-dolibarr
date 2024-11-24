@@ -230,13 +230,620 @@ Le réseau dolibarr-network utilise le pilote bridge. Cela permet aux conteneurs
 
         
 ### 3-2 Install
-### 3-3 Import_csv
-### 3-4 Backup
 
+```
+#!/bin/bash
+
+# Vérifier la présence du fichier docker-compose.yml
+if [ ! -f "docker-compose.yml" ]; then
+  echo "Fichier docker-compose.yml non trouvé. Création du fichier..."
+
+  # Créer le fichier docker-compose.yml pour Dolibarr et MariaDB
+  cat <<EOL > docker-compose.yml
+```
+Vérification du fichier docker-compose.yml:
+
+Le script vérifie si un fichier nommé docker-compose.yml existe dans le répertoire courant.
+
+**Si absent** : il crée un fichier docker-compose.yml qui configure deux services :
+- **MariaDB** : La base de données.
+- **Dolibarr** : L'application ERP/CRM.
+- 
+Les services sont configurés pour fonctionner ensemble sur un réseau Docker personnalisé appelé dolibarr-network.
+```
+version: '3'
+
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: dolibarr-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=dolibarr
+      - MYSQL_USER=dolibarr_user
+      - MYSQL_PASSWORD=dolibarr_password
+    volumes:
+      - ./import-data.sql:/import-data.sql
+      - ./data.csv:/docker-entrypoint-initdb.d/data.csv
+    ports:
+      - "3306:3306"
+    networks:
+      - dolibarr-network
+
+  dolibarr:
+    image: dolibarr/dolibarr:latest
+    container_name: dolibarr-app
+    ports:
+      - "8080:80"
+    environment:
+      - DOLI_DB_HOST=mariadb
+      - DOLI_DB_USER=dolibarr_user
+      - DOLI_DB_PASSWORD=dolibarr_password
+      - DOLI_DB_NAME=dolibarr
+    depends_on:
+      - mariadb
+    volumes:
+      - dolibarr_data:/var/www/html/documents
+    networks:
+      - dolibarr-network
+
+volumes:
+  db_data:
+  dolibarr_data:
+
+networks:
+  dolibarr-network:
+    driver: bridge
+
+EOL
+  echo "Fichier docker-compose.yml créé avec succès."
+else
+  echo "Fichier docker-compose.yml trouvé. Utilisation du fichier existant."
+fi
+```
+**Fichier déjà présenter dans la partie docker-compose.yml.** 
+```
+# Lancer Docker Compose
+echo "Lancement de Dolibarr et MariaDB avec Docker Compose..."
+docker-compose up -d --build
+```
+Démarrage des services: 
+
+Le script utilise la commande ```docker-compose up -d --build``` pour :
+Construire les images Docker si nécessaire.
+Démarrer les conteneurs de Dolibarr et MariaDB en arrière-plan.
+```
+# Attendre la création des tables par Dolibarr
+echo "En attente de la création des conteneurs..."
+sleep 20
+
+# Exécuter le script SQL d'import
+echo "Import des données..."
+docker exec dolibarr-db sh -c "su && service mariadb start && mariadb -u'dolibarr_user' -p'dolibarr_password' < /import-data.sql"
+
+
+```
+Importation des données initiales : 
+
+Une fois les conteneurs démarrés, le script :
+Attend 20 secondes ```sleep 20``` pour que les conteneurs soient prêts.
+Exécute un fichier SQL **import-data.sql** dans le conteneur MariaDB pour importer des données dans la base Dolibarr.
+```
+
+# Attendre la création des conteneurs et l'initialisation de la base de données
+echo "En attente de l'initialisation des conteneurs..."
+sleep 20
+
+
+# Activer les modules "Tiers" et "Fournisseurs"
+echo "Activation des modules Tiers et Fournisseurs..."
+docker exec dolibarr-db sh -c "mariadb -u'dolibarr_user' -p'dolibarr_password' dolibarr -e \"
+  UPDATE llx_const SET value='1' WHERE name='MAIN_MODULE_SOCIETE' AND entity=1;
+  INSERT INTO llx_const (name, value, type, visible, entity) 
+  VALUES 
+  ('MAIN_MODULE_SOCIETE', '1', 'chaine', 1, 1) 
+  ON DUPLICATE KEY UPDATE value='1';
+\""
+docker exec dolibarr-db sh -c "mariadb -u'dolibarr_user' -p'dolibarr_password' dolibarr -e \"
+  UPDATE llx_const SET value='1' WHERE name='MAIN_MODULE_FOURNISSEUR' AND entity=1;
+  INSERT INTO llx_const (name, value, type, visible, entity) 
+  VALUES 
+  ('MAIN_MODULE_FOURNISSEUR', '1', 'chaine', 1, 1) 
+  ON DUPLICATE KEY UPDATE value='1';
+\""
+```
+Activation des modules Dolibarr : 
+
+Attente 20 nouvelles secondes ```sleep 20``` pour que les conteneurs soient prêts.
+Après l'importation des données, le script :
+Active **deux modules Dolibarr** : Tiers et Fournisseurs.
+
+Cela se fait en **exécutant des commandes SQL dans MariaDB** pour modifier les paramètres internes de Dolibarr.
+
+```
+
+# Attendre la création des conteneurs et l'initialisation de la base de données
+echo "En attente de l'initialisation des conteneurs..."
+sleep 5
+
+# Activer uniquement les modules "Clients" et "Fournisseurs"
+echo "Activation des modules Clients et Fournisseurs..."
+docker exec dolibarr-db sh -c "mariadb -u'dolibarr_user' -p'dolibarr_password' dolibarr -e \"
+  INSERT INTO llx_const (name, value, type, visible, entity) VALUES
+  ('MAIN_MODULE_SOCIETE', '1', 'chaine', 1, 1)
+  ON DUPLICATE KEY UPDATE value='1';
+\""
+```
+Activation des modules Dolibarr : 
+
+Attente 5 nouvelles secondes ```sleep 5``` pour que les conteneurs soient prêts.
+
+Exécution dans le conteneur Docker :
+
+**docker exec dolibarr-db:** Lance une commande à l'intérieur du conteneur nommé dolibarr-db (le conteneur MariaDB).
+
+**sh -c**: Exécute un shell dans le conteneur.
+
+Connexion à MariaDB :
+
+**mariadb** : Commande pour interagir avec la base de données MariaDB.
+**-u'dolibarr_user'** : Se connecte avec l’utilisateur dolibarr_user.
+**-p'dolibarr_password'**: Utilise le mot de passe dolibarr_password.
+**dolibarr**: Spécifie qu’on travaille avec la base de données dolibarr.
+
+Commande SQL pour activer le module :
+
+**Table utilisée** : llx_const, qui stocke les paramètres de configuration de Dolibarr.
+
+Insertion ou mise à jour :
+
+Si un paramètre avec ```name='MAIN_MODULE_SOCIETE'``` (module des Clients) existe, il est mis à jour pour activer ce module ```value='1'```.
+Sinon, un nouveau paramètre est créé.
+
+Colonnes importantes :
+**name**: Le nom du paramètre, ici ```MAIN_MODULE_SOCIETE``` pour activer le module Clients.
+**value**: Définit l’état du module (1 pour activé).
+**type**: Le type de valeur, ici chaine (chaîne de caractères).
+**visible**: Rend le module visible dans l’interface de Dolibarr (1).
+**entity**: Applique cette configuration à l’entité 1 (l’entité par défaut dans Dolibarr).
+
+```
+echo "Installation terminée. Dolibarr est disponible sur http://localhost:8080"
+```
+Message final:
+
+Une fois tout configuré, le script affiche un message indiquant que Dolibarr est prêt et accessible à l'adresse : http://localhost:8080.
+
+
+### 3-3 Import_csv
+
+```
+#!/bin/bash
+
+# Paramètres de connexion à la base de données
+DB_HOST="localhost"
+DB_PORT="3306"  # Port local de MariaDB exposé (s'il est mappé en dehors du conteneur Docker)
+DB_USER="dolibarr_user"
+DB_PASSWORD="dolibarr_password"
+DB_NAME="dolibarr"
+```
+
+Paramètres de connexion :
+
+Le script définit les informations nécessaires pour se connecter à la base de données :
+
+**DB_HOST** : Adresse de l'hôte MariaDB (ici localhost).
+**DB_PORT** : Port MariaDB (par défaut, 3306).
+**DB_USER** : Nom d'utilisateur pour accéder à la base.
+**DB_PASSWORD** : Mot de passe correspondant.
+**DB_NAME** : Nom de la base de données (ici dolibarr).
+```
+# Vérifiez que le fichier CSV existe dans le dossier courant
+if [ ! -f "data.csv" ]; then
+  echo "Erreur : Le fichier data.csv est manquant."
+  exit 1
+fi
+```
+Vérification de la présence du fichier CSV :
+
+Avant de continuer, le script vérifie que le fichier data.csv est présent dans le répertoire courant. Si ce fichier est manquant, le script affiche une erreur et s’arrête.
+
+```
+# Copier le fichier CSV dans le conteneur MariaDB pour l'import
+docker cp data.csv dolibarr-db:/var/lib/mysql/data.csv
+```
+Copie du fichier CSV dans le conteneur Docker :
+
+Le script utilise la commande docker cp pour transférer le fichier CSV vers le conteneur MariaDB à l'emplacement /var/lib/mysql/data.csv.
+```
+# Import des data (clients et fournisseurs) depuis le fichier data.csv
+echo "Importation des data depuis data.csv..."
+docker exec -i dolibarr-db mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" <<EOF
+LOAD DATA LOCAL INFILE '/var/lib/mysql/data.csv'
+INTO TABLE llx_societe
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(nom, adresse, telephone, email, type)
+SET fk_societe_type = CASE
+  WHEN type = 'client' THEN 1
+  WHEN type = 'fournisseur' THEN 2
+  ELSE NULL
+END;
+EOF
+```
+Message informatif :
+
+**echo "Importation des data depuis data.csv..."** : Affiche un message dans la console pour informer que l'importation est en cours.
+
+**docker exec -i dolibarr-db mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" <<EOF** : 
+
+Cette commande exécute mysql à l'intérieur du conteneur Docker dolibarr-db.
+
+-i : Maintient l'entrée standard ouverte pour transmettre la commande SQL.
+Les arguments passés au client mysql :
+-u"$DB_USER" : Spécifie l'utilisateur de la base (ex. dolibarr_user).
+-p"$DB_PASSWORD" : Fournit le mot de passe associé à cet utilisateur.
+"$DB_NAME" : Indique le nom de la base cible (ici dolibarr).
+
+
+**LOAD DATA LOCAL INFILE '/var/lib/mysql/data.csv'** :
+ 
+Charge les données du fichier CSV situé dans le chemin /var/lib/mysql/data.csv (chemin à l'intérieur du conteneur MariaDB).
+
+**INTO TABLE llx_societe** : Indique que les données doivent être insérées dans la table llx_societe.
+**FIELDS TERMINATED BY ','** : Spécifie que les colonnes dans le CSV sont séparées par des virgules (,).
+**ENCLOSED BY '"'** : Indique que les valeurs textuelles dans le fichier sont entourées de guillemets (").
+**LINES TERMINATED BY '\n'** : Indique que chaque ligne dans le CSV se termine par un retour à la ligne (\n).
+**IGNORE 1 ROWS **: Ignore la première ligne du fichier CSV, généralement utilisée pour les en-têtes (noms des colonnes).
+
+**(nom, adresse, telephone, email, type)**
+
+Les colonnes du fichier CSV sont associées aux colonnes correspondantes dans la table :
+
+nom, adresse, telephone, email → Colonnes de la table llx_societe.
+type → Colonne spéciale utilisée pour distinguer les clients des fournisseurs.
+
+**SET fk_societe_type = CASE**
+**WHEN type = 'client' THEN 1**
+**WHEN type = 'fournisseur' THEN 2**
+
+```
+SET fk_societe_type = CASE
+  WHEN type = 'client' THEN 1
+  WHEN type = 'fournisseur' THEN 2
+  ELSE NULL
+END;
+
+```
+**fk_societe_type** : Colonne dans la table qui indique le type de société.
+
+Utilisation de la commande CASE pour attribuer une valeur à cette colonne en fonction de la valeur dans le champ type du CSV :
+
+**  WHEN type = 'client' THEN 1** : Si type = 'client' → fk_societe_type est défini à 1.
+** WHEN type = 'fournisseur' THEN 2** : Si type = 'fournisseur' → fk_societe_type est défini à 2.
+** ELSE NULL ** : Si type ne correspond à aucun des cas, la colonne est remplie par NULL.
+
+**END;**
+
+Fin de commande. 
+
+**EOF**
+
+ Fin de la commande SQL :
+ 
+ Cette ligne marque la fin de la commande SQL transmise au client mysql
+
+```
+# Suppression du fichier CSV du conteneur après import
+docker exec -i dolibarr-db rm /var/lib/mysql/data.csv
+
+```
+Suppression du fichier CSV après import :
+
+Une fois l'importation terminée, le script supprime le fichier CSV du conteneur pour éviter d'occuper inutilement de l’espace.
+```
+
+echo "Importation terminée."
+```
+Message final :
+
+Le script affiche un message indiquant que l'importation est terminée avec succès.
+
+### Save & Restor : 
+
+#### Save : 
+```
+
+#!/bin/bash
+
+# Configuration
+APP_CONTAINER="dolibarr-app"    # Conteneur Dolibarr
+DB_CONTAINER="dolibarr-db"      # Conteneur MariaDB
+DB_NAME="dolibarr"              # Nom de la base de données
+DB_USER="dolibarr_user"         # Nom d'utilisateur MySQL
+DB_PASS="dolibarr_password"     # Mot de passe MySQL
+BACKUP_DIR="./backups"          # Répertoire de sauvegarde
+DATE=$(date +"%Y-%m-%d_%H-%M-%S")
+DB_BACKUP_FILE="$BACKUP_DIR/dolibarr_db_backup_$DATE.sql"
+MODULES_BACKUP_FILE="$BACKUP_DIR/dolibarr_modules_backup_$DATE.tar"
+```
+Configuration des variables : 
+
+**APP_CONTAINER** : Nom du conteneur Docker exécutant l’application Dolibarr.
+**DB_CONTAINER** : Nom du conteneur Docker exécutant la base de données MariaDB.
+**DB_NAME** : Nom de la base de données utilisée par Dolibarr (ex. dolibarr).
+**DB_USER et DB_PASS** : Identifiants MySQL pour accéder à la base.
+**BACKUP_DIR** : Répertoire local où les sauvegardes seront stockées (par défaut ./backups).
+**DATE** : Horodatage au format YYYY-MM-DD_HH-MM-SS, pour différencier les fichiers de sauvegarde.
+**DB_BACKUP_FILE** : Chemin et nom du fichier de sauvegarde pour la base de données.
+**MODULES_BACKUP_FILE** : Chemin et nom du fichier de sauvegarde pour les modules Dolibarr.
+
+```
+# Création du dossier de sauvegarde si nécessaire
+mkdir -p "$BACKUP_DIR"
+```
+Création du répertoire de sauvegarde : 
+
+Vérifie que le dossier de sauvegarde existe, et le crée si nécessaire.
+
+```
+echo "### Début de la sauvegarde ###"
+```
+Début du processus de sauvegarde : 
+
+Affiche un message informant que le processus de sauvegarde commence.
+
+```
+
+# Sauvegarde de la base de données
+echo "Sauvegarde de la base de données..."
+sudo docker exec "$APP_CONTAINER" mysqldump -h"$DB_CONTAINER" -u"$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$DB_BACKUP_FILE"
+```
+
+Sauvegarde de la base de données : 
+
+Exécute la commande **mysqldump** depuis le conteneur de l'application Dolibarr pour sauvegarder la base de données :
+
+**-h"$DB_CONTAINER"** : Spécifie l'hôte de la base (le conteneur MariaDB).
+**-u"$DB_USER" et -p"$DB_PASS"** : Utilise les identifiants pour se connecter.
+**"$DB_NAME"** : Sauvegarde uniquement cette base.
+
+Le résultat est redirigé dans le fichier défini par **DB_BACKUP_FILE**.
+
+```
+if [ $? -eq 0 ]; then
+    echo "Sauvegarde de la base de données réussie : $DB_BACKUP_FILE"
+else
+    echo "Erreur lors de la sauvegarde de la base de données."
+    exit 1
+fi
+```
+Vérification :
+
+Si la commande réussit ($? -eq 0), un message de succès est affiché avec le chemin de sauvegarde.
+Sinon, un message d'erreur est affiché, et le script s'arrête (exit 1).
+
+```
+# Sauvegarde des modules Dolibarr
+echo "Sauvegarde des modules Dolibarr..."
+sudo docker exec "$APP_CONTAINER" tar -cf - -C /var/www/html/custom . > "$MODULES_BACKUP_FILE"
+```
+Sauvegarde des modules Dolibarr :
+
+Cette commande archive les modules personnalisés (répertoire custom) de Dolibarr :
+
+-**cf - ** : Crée une archive sans fichier intermédiaire.
+-**C /var/www/html/custom .** : Change le répertoire courant dans le conteneur avant d'archiver.
+
+Le résultat est redirigé vers le fichier défini par **MODULES_BACKUP_FILE**.
+
+```
+if [ $? -eq 0 ]; then
+    echo "Sauvegarde des modules réussie : $MODULES_BACKUP_FILE"
+else
+    echo "Erreur lors de la sauvegarde des modules."
+    exit 1
+fi
+```
+Vérification :
+
+Si la commande réussit ($? -eq 0), un message de succès est affiché avec le chemin de sauvegarde.
+Sinon, un message d'erreur est affiché, et le script s'arrête (exit 1).
+```
+echo "### Fin de la sauvegarde ###"
+```
+ Message de fin : 
+
+ Affiche un message pour indiquer que la procédure de sauvegarde est terminée.
+
+#### Restor :
+
+```
+#!/bin/bash
+
+# Configuration
+APP_CONTAINER="dolibarr-app"    # Conteneur qui contient `mysql` (client)
+DB_CONTAINER="dolibarr-db"      # Conteneur de la base de données
+DB_NAME="dolibarr"              # Nom de la base de données
+DB_USER="dolibarr_user"         # Nom d'utilisateur MySQL
+DB_PASS="dolibarr_password"     # Mot de passe MySQL
+BACKUP_DIR="./backups"          # Répertoire des sauvegardes
+LATEST_DB_BACKUP=$(ls -t $BACKUP_DIR/dolibarr_db_backup_*.sql | head -n 1)  # Dernière sauvegarde DB
+LATEST_MODULES_BACKUP=$(ls -t $BACKUP_DIR/dolibarr_modules_backup_*.tar | head -n 1)
+
+
+```
+Configuration initiale :
+
+Nom des conteneurs :
+
+**APP_CONTAINER** : Conteneur exécutant l'application Dolibarr.
+**DB_CONTAINER** : Conteneur exécutant la base de données MariaDB.
+
+Informations sur la base de données :
+
+**DB_NAME** : Nom de la base de données à restaurer.
+**DB_USER et DB_PASS** : Identifiants pour accéder à la base.
+
+Répertoire de sauvegarde :
+
+**BACKUP_DIR** : Répertoire contenant les sauvegardes.
+**LATEST_DB_BACKUP** : Recherche du fichier de sauvegarde le plus récent dans le répertoire de sauvegarde, basé sur la date (fichier SQL).
+**LATEST_MODULES_BACKUP** :  Recherche du fichier de sauvegarde le plus récent dans le répertoire de sauvegarde, afin de récuperer les modules.
+
+```
+
+# Vérification de la dernière sauvegarde
+if [ -z "$LATEST_DB_BACKUP" ]; then
+    echo "Aucune sauvegarde de base de données trouvée dans le répertoire $BACKUP_DIR"
+    exit 1
+fi
+
+# Vérification de la dernière sauvegarde des modules
+if [ -z "$LATEST_MODULES_BACKUP" ]; then
+    echo "Aucune sauvegarde des modules trouvée dans le répertoire $BACKUP_DIR"
+    exit 1
+fi
+```
+Vérification de la dernière sauvegarde : 
+
+Le script vérifie si un fichier de sauvegarde est présent dans le répertoire de sauvegarde. Si aucun fichier n'est trouvé, un message d'erreur est affiché et le script s'arrête (exit 1).
+
+```
+echo "### Début de la restauration ###"
+```
+Message de début : 
+
+Affiche un message pour signaler que le processus de restauration commence.
+
+```
+# Recréation des conteneurs
+echo "Recréation des conteneurs..."
+docker-compose down
+docker-compose up -d
+```
+Recréation des conteneurs Docker : 
+
+**docker-compose down** : Arrête et supprime les conteneurs existants.
+**docker-compose up -d** : Recréé les conteneurs définis dans le fichier docker-compose.yml (y compris Dolibarr et MariaDB) et les démarre en mode détaché (-d).
+```
+# Attente du démarrage des conteneurs
+echo "Attente du démarrage des conteneurs..."
+sleep 20
+```
+Attente du démarrage des conteneurs : 
+
+Le script attend 20 secondes pour s'assurer que les conteneurs ont eu le temps de démarrer correctement.
+
+```
+# Désactivation des contraintes de clé étrangère
+echo "Désactivation des contraintes de clé étrangère..."
+docker exec -i "$DB_CONTAINER" mysql -u"$DB_USER" -p"$DB_PASS" -e "SET FOREIGN_KEY_CHECKS = 0;"
+```
+Désactivation des contraintes de clé étrangère :
+
+Avant de restaurer la base de données, le script désactive les contraintes de clé étrangère dans MariaDB avec la commande SQL SET FOREIGN_KEY_CHECKS = 0;. Cela permet d'éviter des erreurs si les tables sont restaurées dans un ordre incorrect (les clés étrangères peuvent empêcher l'insertion de données si elles dépendent d'autres tables).
+
+```
+# Restauration de la base de données
+echo "Restauration de la base de données depuis $LATEST_DB_BACKUP..."
+docker exec -i "$DB_CONTAINER" mysql -u"$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$LATEST_DB_BACKUP"
+```
+Restauration de la base de données : 
+
+Le fichier de sauvegarde le plus récent (LATEST_DB_BACKUP) est restauré dans la base de données dolibarr via la commande mysql.
+< "$LATEST_DB_BACKUP" : Redirige le fichier SQL vers la commande mysql pour l'importer dans la base de données.
+```
+# Réactivation des contraintes de clé étrangère
+echo "Réactivation des contraintes de clé étrangère..."
+docker exec -i "$DB_CONTAINER" mysql -u"$DB_USER" -p"$DB_PASS" -e "SET FOREIGN_KEY_CHECKS = 1;"
+```
+Réactivation des contraintes de clé étrangère
+
+Une fois la restauration terminée, les contraintes de clé étrangère sont réactivées pour garantir l'intégrité référentielle des données.
+
+```
+# Vérification de la réussite de la restauration
+if [ $? -eq 0 ]; then
+    echo "Restauration de la base de données réussie."
+else
+    echo "Erreur lors de la restauration de la base de données."
+    exit 1
+fi
+```
+
+Vérification de la réussite de la restauration
+
+Après la restauration, le script vérifie si la commande précédente s'est exécutée avec succès en vérifiant la valeur de retour ($?).
+
+Si la restauration est réussie, un message de confirmation est affiché. Sinon, un message d'erreur est affiché et le script s'arrête.
+
+```
+# Restauration des modules Dolibarr (volume)
+echo "Restauration des modules Dolibarr depuis $LATEST_MODULES_BACKUP..."
+docker exec -i "$APP_CONTAINER" tar -xvf - -C /var/www/html/custom < "$LATEST_MODULES_BACKUP"
+```
+Restauration des modules Dolibarr : 
+
+Le script restaure ensuite les modules Dolibarr en extrayant l'archive TAR de la dernière sauvegarde et en la copiant dans le répertoire approprié dans le conteneur Dolibarr :
+
+Cette commande utilise tar pour extraire les fichiers dans le répertoire /var/www/html/custom du conteneur dolibarr-app.
+
+```
+# Vérification de la réussite de la restauration des modules
+if [ $? -eq 0 ]; then
+    echo "Restauration des modules réussie."
+else
+    echo "Erreur lors de la restauration des modules."
+    exit 1
+fi
+
+```
+Vérification de la réussite de la restauration des modules :
+
+Si la commande de restauration des modules échoue, le script affiche un message d'erreur et s'arrête.
+```
+echo "### Fin de la restauration ###"
+
+```
+Message de fin
+
+Le script affiche un message indiquant la fin du processus de restauration.
 
 
 ## 4 Bilan du projet
-### 4-1 Conclusion 
-### 4-2 Point fort 
-### 4-3 Point faible
+
+Dans cette partie, on va faire une conclusion de notre projet et de nos différents point de vu avec les momments faibles et les momments forts puis nos avis sur le projet. 
+
+### 4-2 momment fort 
+
+Pour les moments fort, nous avions : 
+
+- La recherche d'information sur les différents outils utiliser
+- le script d'installation était plutôt simple a faire (sauf la partie avec les modules )
+- Les premières étapes du projet était plutôt simple à faire.
+
+### 4-3 momment faible
+
+Pour les moments faible, nous avions : 
+
+- la création du système de sauvegarde qui était plutôt dure à réaliser (save.sh et restor.sh) 
+- l'iniation des modules mis dans le script installation
+
 ### 4-4 Nos avis 
+
+Baptiste : 
+
+<écrit ton avis sur le projet ici>
+
+Léo : 
+
+Je m'excuse de mon absence, j'essayerai d'être le plus complet ici par rapport à mon avis. 
+
+Même si le projet a mal commencé, il était plutôt intéressant dans son ensemble. Cela nous a permis de découvrir comment manier et utiliser Dolibarr, mais aussi comment réaliser un système de sauvegarde. Bien qu’au début, il était plutôt simple. Mais cela s'est bien corcé quand nous avions touché à comment sauvegarder, mais aussi comment utiliser dolibarr afin d'activer les modules. 
+
+De plus, je voudrais faire une remarque : j'ai essayé de faire le système de sauvegarde (même si la semaine était plutôt problématique par rapport à ma santé), il est possible que le programme fonctionne à moitié ou soit fonctionne.  
+
+Je sais que mon avis personnel est plutôt court mais j'ai essayé de faire ce document le plus complet afin de présenter le projet.
