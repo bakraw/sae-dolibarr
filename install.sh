@@ -63,7 +63,7 @@ docker-compose up -d --build
 
 # Attendre la création des tables par Dolibarr
 echo "En attente de la création des conteneurs..."
-sleep 20
+sleep 30
 
 # Exécuter le script SQL d'import
 echo "Import des données..."
@@ -71,7 +71,7 @@ docker exec dolibarr-db sh -c "su && service mariadb start && mariadb -u'dolibar
 
 # Attendre la création des conteneurs et l'initialisation de la base de données
 echo "En attente de l'initialisation des conteneurs..."
-sleep 20
+sleep 30
 
 # Activer les modules "Tiers" et "Fournisseurs"
 echo "Activation des modules Tiers et Fournisseurs..."
